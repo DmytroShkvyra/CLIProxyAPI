@@ -22,6 +22,10 @@ const config = JSON.parse(fs.readFileSync(path.join(instance, 'config.production
 config.server.port = port;
 config.access['api-keys'] = [clientKey];
 config.management = { ...config.management, 'allow-remote': false, 'secret-key': managementKey };
+// A locally built panel is pinned so the upstream updater cannot erase locales.
+if (fs.existsSync(path.join(instance, 'webui.json'))) {
+  config.management['disable-auto-update-panel'] = true;
+}
 const runtime = path.join(instance, 'state', `config-${port}.yaml`);
 fs.mkdirSync(path.dirname(runtime), { recursive: true, mode: 0o700 });
 fs.writeFileSync(runtime, JSON.stringify(config, null, 2), { mode: 0o600 });

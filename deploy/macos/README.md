@@ -67,3 +67,12 @@ DeviceCheck timeout maintenance is separate from model routing; see
 `diagnostics/DEVICECHECK_AUTOPATCH.md`. Its original-module backups are private
 under `.local/devicecheck-swap-backups`. Unknown future module implementations
 are left untouched. No account tokens or app bundle binaries are published.
+
+To deploy a localized single-file panel, build the management UI checkout and run
+`python3 deploy/macos/install-webui.py /path/to/CLIProxyAPI-WebUI`, then restart
+CLIProxyAPI. The previous panel is backed up. `.local/webui.json` pins the local
+asset and disables upstream panel auto-updates so an update cannot erase the
+additional language. Remove that manifest and restart to restore the normal
+upstream update policy.
+The Ukrainian source is maintained in
+https://github.com/DmytroShkvyra/Cli-Proxy-API-Management-Center/tree/ukrainian.
