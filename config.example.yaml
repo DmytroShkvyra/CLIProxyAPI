@@ -343,6 +343,9 @@ requests:
 # Client-facing compatibility settings apply to both OAuth and API-key routes.
 client:
   codex:
+    # Optional compact tool catalog for exclusively third-party routes.
+    # Empty/direct preserves the default. code_mode_only needs a compatible Codex client.
+    third-party-tool-mode: ""
     # When false (default), only models that natively declare freeform apply_patch advertise it.
     # When true, non-template and bridged models supported by every routing executor also advertise "freeform".
     enable-apply-patch: false

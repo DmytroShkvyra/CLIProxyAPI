@@ -140,6 +140,10 @@ type ClaudeClientConfig struct {
 
 // CodexClientConfig configures Codex client compatibility and the model catalog.
 type CodexClientConfig struct {
+	// ThirdPartyToolMode optionally selects compact code-mode tools for non-Codex routes.
+	// Empty or direct preserves the default catalog. code_mode_only requires client support.
+	ThirdPartyToolMode string `yaml:"third-party-tool-mode,omitempty" json:"third-party-tool-mode,omitempty"`
+
 	// OptimizeMultiAgentV2 optimizes official Codex multi-agent requests across providers.
 	// Default false leaves the client's multi-agent behavior unchanged.
 	OptimizeMultiAgentV2 bool `yaml:"optimize-multi-agent-v2" json:"optimize-multi-agent-v2"`

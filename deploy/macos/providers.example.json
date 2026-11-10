@@ -1,0 +1,14 @@
+[
+  {
+    "provider": "vmlx",
+    "baseUrl": "http://127.0.0.1:8080/v1",
+    "displayName": "vMLX",
+    "routes": []
+  },
+  {
+    "provider": "omlx",
+    "baseUrl": "http://127.0.0.1:18080/v1",
+    "displayName": "oMLX",
+    "routes": []
+  }
+]

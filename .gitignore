@@ -67,3 +67,7 @@ docker-compose.override.yml
 
 # Local LLM Wiki vault
 .llm-wiki
+
+# Instance configuration, credentials, binaries and migration artifacts.
+/.local/
+**/__pycache__/
