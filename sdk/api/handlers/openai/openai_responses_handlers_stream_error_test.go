@@ -1,9 +1,11 @@
 package openai
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,6 +20,33 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
+
+type heartbeatShortWriter struct{}
+
+func (heartbeatShortWriter) Write(p []byte) (int, error) { return len(p) - 1, nil }
+
+func TestResponsesHeartbeatProducesNonTerminalEvent(t *testing.T) {
+	var body bytes.Buffer
+	if err := writeResponsesHeartbeat(&body, true); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body.String(), "event: ping\ndata: {\"type\":\"ping\"}\n\n") {
+		t.Fatalf("heartbeat must produce an event, not only an SSE comment: %q", body.String())
+	}
+	if strings.Contains(body.String(), "response.") || strings.Contains(body.String(), "sequence_number") {
+		t.Fatalf("heartbeat invented response state: %q", body.String())
+	}
+	if err := writeResponsesHeartbeat(heartbeatShortWriter{}, true); !errors.Is(err, io.ErrShortWrite) {
+		t.Fatalf("short write error = %v, want %v", err, io.ErrShortWrite)
+	}
+	body.Reset()
+	if err := writeResponsesHeartbeat(&body, false); err != nil {
+		t.Fatal(err)
+	}
+	if body.String() != ": keep-alive\n\n" {
+		t.Fatalf("non-Codex clients must retain comment heartbeats: %q", body.String())
+	}
+}
 
 const (
 	prematureResponsesStreamModel       = "premature-responses-stream-model"
@@ -982,6 +1011,9 @@ func TestResponsesHandlerSendKeepAliveBeforeFT(t *testing.T) {
 		body := recorder.Body.String()
 		if !strings.Contains(body, ": keep-alive\n\n") {
 			t.Fatalf("initial keepalive missing: %q", body)
+		}
+		if !strings.Contains(body, "event: ping\ndata: {\"type\":\"ping\"}") {
+			t.Fatalf("Codex heartbeat must be visible to the SSE event decoder: %q", body)
 		}
 		if !strings.Contains(body, "event: response.failed") || !strings.Contains(body, "upstream failed after initial keepalive") {
 			t.Fatalf("terminal SSE JSON failure missing after keepalive: %q", body)

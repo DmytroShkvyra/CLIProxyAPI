@@ -56,6 +56,16 @@ func writeResponsesSSEChunk(w io.Writer, chunk []byte) error {
 	return nil
 }
 
+// Comments do not produce events in Codex's eventsource decoder, so they do not
+// reset its idle deadline. A ping is an observable, non-terminal SSE event and
+// does not invent a response ID, output item, or model progress.
+func writeResponsesHeartbeat(w io.Writer, codexClient bool) error {
+	if !codexClient {
+		return writeResponsesSSEChunk(w, []byte(": keep-alive\n\n"))
+	}
+	return writeResponsesSSEChunk(w, []byte(": keep-alive\n\nevent: ping\ndata: {\"type\":\"ping\"}\n\n"))
+}
+
 // flushResponsesSSE preserves middleware behavior and transport flush errors.
 func flushResponsesSSE(w http.ResponseWriter) error {
 	return httpwire.FlushResponse(w)
@@ -1095,7 +1105,7 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 	}
 	writeKeepAlive := func() bool {
 		commitSSE()
-		if errWrite := writeResponsesSSEChunk(c.Writer, []byte(": keep-alive\n\n")); errWrite != nil {
+		if errWrite := writeResponsesHeartbeat(c.Writer, isCodexResponsesClientRequest(c)); errWrite != nil {
 			cliCancel(errWrite)
 			return false
 		}
@@ -1495,6 +1505,11 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesStream(c *gin.Context, flush
 	h.ForwardStream(c, flusher, cancel, data, errs, handlers.StreamForwardOptions{
 		NormalizeTerminalError: sanitizeResponsesStreamErrorMessage,
 		Flush:                  func() error { return flushResponsesSSE(c.Writer) },
+		WriteKeepAlive: func() {
+			if errWrite := writeResponsesHeartbeat(c.Writer, framer.isCodexClient); errWrite != nil {
+				framer.writeErr = errWrite
+			}
+		},
 		WriteChunk: func(chunk []byte) {
 			framer.WriteChunk(c.Writer, chunk)
 		},

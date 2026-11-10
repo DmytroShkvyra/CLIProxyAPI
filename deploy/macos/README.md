@@ -43,6 +43,9 @@ Enable `features.code_mode_only_strict_3p_tools = true` in Codex together with
 `client.codex.third-party-tool-mode: code_mode_only` in CLIProxyAPI. This prevents
 large direct tool schemas from exhausting local model context/memory. Ten-second
 SSE keepalives are enabled, including during prefill, without bootstrap retries.
+Codex Responses requests receive non-terminal `ping` events: comment-only
+heartbeats are ignored by Codex's event decoder and do not reset its idle timer.
+Other clients retain comment heartbeats. No response IDs or output are fabricated.
 Only configured explicit models advertise large context windows. Model listing
 alone does not qualify image/audio input or tool reliability for every model.
 
@@ -54,6 +57,11 @@ The smoke test checks authentication, model IDs, invalid-model rejection and
 streaming tool calls with non-streaming result replay across the three sources.
 It makes synthetic inference requests, including small OpenAI requests against
 the configured ChatGPT allowance, and saves `.local/state/smoke-results.json`.
+
+`node deploy/macos/test-sse-heartbeat.mjs` checks the real Codex SSE decoder
+against a local fixture with 4.5-second pauses before the first token and during
+streaming, and a 2-second client idle timeout. It requires exactly one fixture
+inference request and a completed turn, without contacting a paid model.
 
 DeviceCheck timeout maintenance is separate from model routing; see
 `diagnostics/DEVICECHECK_AUTOPATCH.md`. Its original-module backups are private
